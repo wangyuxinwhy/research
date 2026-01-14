@@ -1,0 +1,72 @@
+{
+  "cosine_short": {
+    "Pure Python": 1.0,
+    "NumPy": 0.6733979706430451,
+    "scikit-learn": 0.057763560583998196,
+    "Rust (PyO3)": 1.715333439024522
+  },
+  "cosine_medium": {
+    "Pure Python": 1.0,
+    "NumPy": 0.9454327469159794,
+    "scikit-learn": 0.26502194285236613,
+    "Rust (PyO3)": 1.6534959532417457
+  },
+  "cosine_long": {
+    "Pure Python": 1.0,
+    "NumPy": 0.8660427192730811,
+    "scikit-learn": 1.219326189153207,
+    "Rust (PyO3)": 2.3572342533352937
+  },
+  "levenshtein_short": {
+    "Pure Python": 1.0,
+    "NumPy": 0.2918440558267257,
+    "rapidfuzz": 896.6321687050452,
+    "python-Levenshtein": 925.9288735702767,
+    "Rust (PyO3)": 67.09820580311272
+  },
+  "levenshtein_medium": {
+    "Pure Python": 1.0,
+    "NumPy": 0.35461818863105443,
+    "rapidfuzz": 5182.989387996627,
+    "python-Levenshtein": 5163.933790469861,
+    "Rust (PyO3)": 87.51723921729307
+  },
+  "jaccard_short": {
+    "Pure Python": 1.0,
+    "NumPy": 0.9715828292914782,
+    "Rust (PyO3)": 2.893770247095155
+  },
+  "jaccard_medium": {
+    "Pure Python": 1.0,
+    "NumPy": 0.9980639891784444,
+    "Rust (PyO3)": 3.3708540069160735
+  },
+  "jaccard_long": {
+    "Pure Python": 1.0,
+    "NumPy": 1.0220353982342558,
+    "Rust (PyO3)": 3.1233870617137542
+  },
+  "bm25_score_short": {
+    "Pure Python": 1.0,
+    "NumPy": 0.9766990787184915,
+    "rank-bm25": 0.06360638810270922,
+    "Rust (PyO3)": 3.500834726398259
+  },
+  "bm25_score_medium": {
+    "Pure Python": 1.0,
+    "NumPy": 1.0496705450963644,
+    "rank-bm25": 0.10867574040992868,
+    "Rust (PyO3)": 3.975244774510341
+  },
+  "bm25_score_long": {
+    "Pure Python": 1.0,
+    "NumPy": 1.1123884264969186,
+    "rank-bm25": 0.13366522547126927,
+    "Rust (PyO3)": 3.885422212167434
+  },
+  "levenshtein_long": {
+    "rapidfuzz": 0.20899994737603303,
+    "python-Levenshtein": 0.21068927840249066,
+    "Rust (PyO3)": 0.0032587104520596043
+  }
+}

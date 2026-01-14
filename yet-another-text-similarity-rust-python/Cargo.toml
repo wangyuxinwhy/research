@@ -1,0 +1,25 @@
+[package]
+name = "text_similarity_rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Research Project"]
+description = "High-performance text similarity algorithms in Rust"
+
+[lib]
+name = "text_similarity_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20", features = ["extension-module"] }
+unicode-segmentation = "1.10"
+ahash = "0.8"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
