@@ -1,10 +1,16 @@
 use ahash::AHashMap;
-use pyo3::prelude::*;
 use std::collections::HashSet;
 use unicode_segmentation::UnicodeSegmentation;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
+// ============================================================================
+// Core algorithms (no PyO3 dependency)
+// ============================================================================
+
 /// Tokenize text into words (handles both English and Chinese)
-fn tokenize(text: &str) -> Vec<String> {
+pub fn tokenize(text: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     for word in text.unicode_words() {
         let lower = word.to_lowercase();
@@ -16,7 +22,7 @@ fn tokenize(text: &str) -> Vec<String> {
 }
 
 /// Build term frequency map from tokens
-fn build_term_freq(tokens: &[String]) -> AHashMap<String, f64> {
+pub fn build_term_freq(tokens: &[String]) -> AHashMap<String, f64> {
     let mut freq: AHashMap<String, f64> = AHashMap::new();
     for token in tokens {
         *freq.entry(token.clone()).or_insert(0.0) += 1.0;
@@ -24,28 +30,22 @@ fn build_term_freq(tokens: &[String]) -> AHashMap<String, f64> {
     freq
 }
 
-/// Cosine similarity between two texts
-///
-/// Computes the cosine similarity based on term frequency vectors.
-/// Returns a value between 0 and 1, where 1 means identical.
-#[pyfunction]
-fn cosine_similarity(text1: &str, text2: &str) -> PyResult<f64> {
+/// Cosine similarity between two texts (native Rust)
+pub fn cosine_similarity_native(text1: &str, text2: &str) -> f64 {
     let tokens1 = tokenize(text1);
     let tokens2 = tokenize(text2);
 
     if tokens1.is_empty() || tokens2.is_empty() {
-        return Ok(0.0);
+        return 0.0;
     }
 
     let freq1 = build_term_freq(&tokens1);
     let freq2 = build_term_freq(&tokens2);
 
-    // Compute dot product and magnitudes
     let mut dot_product = 0.0;
     let mut mag1 = 0.0;
     let mut mag2 = 0.0;
 
-    // Collect all unique terms
     let mut all_terms: HashSet<&String> = HashSet::new();
     all_terms.extend(freq1.keys());
     all_terms.extend(freq2.keys());
@@ -59,18 +59,14 @@ fn cosine_similarity(text1: &str, text2: &str) -> PyResult<f64> {
     }
 
     if mag1 == 0.0 || mag2 == 0.0 {
-        return Ok(0.0);
+        return 0.0;
     }
 
-    Ok(dot_product / (mag1.sqrt() * mag2.sqrt()))
+    dot_product / (mag1.sqrt() * mag2.sqrt())
 }
 
-/// Levenshtein edit distance between two strings
-///
-/// Returns the minimum number of single-character edits (insertions, deletions,
-/// or substitutions) required to change one string into the other.
-#[pyfunction]
-fn levenshtein_distance(s1: &str, s2: &str) -> PyResult<usize> {
+/// Levenshtein edit distance between two strings (native Rust)
+pub fn levenshtein_distance_native(s1: &str, s2: &str) -> usize {
     let chars1: Vec<char> = s1.chars().collect();
     let chars2: Vec<char> = s2.chars().collect();
 
@@ -78,13 +74,12 @@ fn levenshtein_distance(s1: &str, s2: &str) -> PyResult<usize> {
     let len2 = chars2.len();
 
     if len1 == 0 {
-        return Ok(len2);
+        return len2;
     }
     if len2 == 0 {
-        return Ok(len1);
+        return len1;
     }
 
-    // Use two-row optimization for space efficiency
     let mut prev_row: Vec<usize> = (0..=len2).collect();
     let mut curr_row: Vec<usize> = vec![0; len2 + 1];
 
@@ -94,75 +89,61 @@ fn levenshtein_distance(s1: &str, s2: &str) -> PyResult<usize> {
         for j in 1..=len2 {
             let cost = if chars1[i - 1] == chars2[j - 1] { 0 } else { 1 };
 
-            curr_row[j] = (prev_row[j] + 1)               // deletion
-                .min(curr_row[j - 1] + 1)                 // insertion
-                .min(prev_row[j - 1] + cost);             // substitution
+            curr_row[j] = (prev_row[j] + 1)
+                .min(curr_row[j - 1] + 1)
+                .min(prev_row[j - 1] + cost);
         }
 
         std::mem::swap(&mut prev_row, &mut curr_row);
     }
 
-    Ok(prev_row[len2])
+    prev_row[len2]
 }
 
 /// Levenshtein similarity (normalized to 0-1 range)
-#[pyfunction]
-fn levenshtein_similarity(s1: &str, s2: &str) -> PyResult<f64> {
-    let distance = levenshtein_distance(s1, s2)?;
+pub fn levenshtein_similarity_native(s1: &str, s2: &str) -> f64 {
+    let distance = levenshtein_distance_native(s1, s2);
     let max_len = s1.chars().count().max(s2.chars().count());
 
     if max_len == 0 {
-        return Ok(1.0);
+        return 1.0;
     }
 
-    Ok(1.0 - (distance as f64 / max_len as f64))
+    1.0 - (distance as f64 / max_len as f64)
 }
 
-/// Jaccard similarity between two texts
-///
-/// Computes the Jaccard index (intersection over union) of word sets.
-/// Returns a value between 0 and 1, where 1 means identical word sets.
-#[pyfunction]
-fn jaccard_similarity(text1: &str, text2: &str) -> PyResult<f64> {
+/// Jaccard similarity between two texts (native Rust)
+pub fn jaccard_similarity_native(text1: &str, text2: &str) -> f64 {
     let tokens1: HashSet<String> = tokenize(text1).into_iter().collect();
     let tokens2: HashSet<String> = tokenize(text2).into_iter().collect();
 
     if tokens1.is_empty() && tokens2.is_empty() {
-        return Ok(1.0);
+        return 1.0;
     }
 
     if tokens1.is_empty() || tokens2.is_empty() {
-        return Ok(0.0);
+        return 0.0;
     }
 
     let intersection = tokens1.intersection(&tokens2).count();
     let union = tokens1.union(&tokens2).count();
 
-    Ok(intersection as f64 / union as f64)
+    intersection as f64 / union as f64
 }
 
-/// BM25 scoring for a single document against a query
-///
-/// Parameters:
-/// - query: The search query text
-/// - document: The document text to score
-/// - k1: Term frequency saturation parameter (default: 1.5)
-/// - b: Length normalization parameter (default: 0.75)
-/// - avg_doc_len: Average document length in the corpus
-#[pyfunction]
-#[pyo3(signature = (query, document, k1=1.5, b=0.75, avg_doc_len=None))]
-fn bm25_score(
+/// BM25 scoring for a single document (native Rust)
+pub fn bm25_score_native(
     query: &str,
     document: &str,
     k1: f64,
     b: f64,
     avg_doc_len: Option<f64>,
-) -> PyResult<f64> {
+) -> f64 {
     let query_tokens = tokenize(query);
     let doc_tokens = tokenize(document);
 
     if query_tokens.is_empty() || doc_tokens.is_empty() {
-        return Ok(0.0);
+        return 0.0;
     }
 
     let doc_len = doc_tokens.len() as f64;
@@ -172,22 +153,58 @@ fn bm25_score(
 
     let mut score = 0.0;
 
-    // Using IDF = 1 for single document scoring (simplified)
-    // In practice, IDF should be computed from corpus statistics
     for term in &query_tokens {
         if let Some(&tf) = doc_freq.get(term) {
-            // BM25 term frequency component
             let tf_component = (tf * (k1 + 1.0)) / (tf + k1 * (1.0 - b + b * (doc_len / avg_len)));
             score += tf_component;
         }
     }
 
-    Ok(score)
+    score
 }
 
-/// BM25 ranking for multiple documents against a query
-///
-/// Returns a vector of (index, score) tuples sorted by score descending.
+// ============================================================================
+// PyO3 bindings (only when feature enabled)
+// ============================================================================
+
+#[cfg(feature = "pyo3")]
+#[pyfunction]
+fn cosine_similarity(text1: &str, text2: &str) -> PyResult<f64> {
+    Ok(cosine_similarity_native(text1, text2))
+}
+
+#[cfg(feature = "pyo3")]
+#[pyfunction]
+fn levenshtein_distance(s1: &str, s2: &str) -> PyResult<usize> {
+    Ok(levenshtein_distance_native(s1, s2))
+}
+
+#[cfg(feature = "pyo3")]
+#[pyfunction]
+fn levenshtein_similarity(s1: &str, s2: &str) -> PyResult<f64> {
+    Ok(levenshtein_similarity_native(s1, s2))
+}
+
+#[cfg(feature = "pyo3")]
+#[pyfunction]
+fn jaccard_similarity(text1: &str, text2: &str) -> PyResult<f64> {
+    Ok(jaccard_similarity_native(text1, text2))
+}
+
+#[cfg(feature = "pyo3")]
+#[pyfunction]
+#[pyo3(signature = (query, document, k1=1.5, b=0.75, avg_doc_len=None))]
+fn bm25_score(
+    query: &str,
+    document: &str,
+    k1: f64,
+    b: f64,
+    avg_doc_len: Option<f64>,
+) -> PyResult<f64> {
+    Ok(bm25_score_native(query, document, k1, b, avg_doc_len))
+}
+
+#[cfg(feature = "pyo3")]
 #[pyfunction]
 #[pyo3(signature = (query, documents, k1=1.5, b=0.75))]
 fn bm25_rank(
@@ -205,26 +222,22 @@ fn bm25_rank(
         return Ok(documents.iter().enumerate().map(|(i, _)| (i, 0.0)).collect());
     }
 
-    // Precompute document statistics
     let doc_tokens: Vec<Vec<String>> = documents.iter().map(|d| tokenize(d)).collect();
     let doc_freqs: Vec<AHashMap<String, f64>> = doc_tokens.iter().map(|t| build_term_freq(t)).collect();
     let doc_lens: Vec<f64> = doc_tokens.iter().map(|t| t.len() as f64).collect();
     let avg_doc_len: f64 = doc_lens.iter().sum::<f64>() / doc_lens.len() as f64;
 
-    // Compute IDF for query terms
     let n = documents.len() as f64;
     let mut idf: AHashMap<&String, f64> = AHashMap::new();
 
     for term in &query_tokens {
         let df = doc_freqs.iter().filter(|freq| freq.contains_key(term)).count() as f64;
         if df > 0.0 {
-            // Standard BM25 IDF formula
             let idf_score = ((n - df + 0.5) / (df + 0.5) + 1.0).ln();
             idf.insert(term, idf_score.max(0.0));
         }
     }
 
-    // Score each document
     let mut scores: Vec<(usize, f64)> = Vec::with_capacity(documents.len());
 
     for (i, (doc_freq, doc_len)) in doc_freqs.iter().zip(doc_lens.iter()).enumerate() {
@@ -240,16 +253,12 @@ fn bm25_rank(
         scores.push((i, score));
     }
 
-    // Sort by score descending
     scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     Ok(scores)
 }
 
-/// Batch cosine similarity computation
-///
-/// Computes cosine similarity between a query and multiple documents.
-/// Returns a vector of similarity scores.
+#[cfg(feature = "pyo3")]
 #[pyfunction]
 fn batch_cosine_similarity(query: &str, documents: Vec<&str>) -> PyResult<Vec<f64>> {
     let query_tokens = tokenize(query);
@@ -293,25 +302,25 @@ fn batch_cosine_similarity(query: &str, documents: Vec<&str>) -> PyResult<Vec<f6
     Ok(results)
 }
 
-/// Batch Levenshtein distance computation
+#[cfg(feature = "pyo3")]
 #[pyfunction]
 fn batch_levenshtein_distance(query: &str, documents: Vec<&str>) -> PyResult<Vec<usize>> {
-    documents
+    Ok(documents
         .iter()
-        .map(|doc| levenshtein_distance(query, doc))
-        .collect()
+        .map(|doc| levenshtein_distance_native(query, doc))
+        .collect())
 }
 
-/// Batch Jaccard similarity computation
+#[cfg(feature = "pyo3")]
 #[pyfunction]
 fn batch_jaccard_similarity(query: &str, documents: Vec<&str>) -> PyResult<Vec<f64>> {
-    documents
+    Ok(documents
         .iter()
-        .map(|doc| jaccard_similarity(query, doc))
-        .collect()
+        .map(|doc| jaccard_similarity_native(query, doc))
+        .collect())
 }
 
-/// Python module definition
+#[cfg(feature = "pyo3")]
 #[pymodule]
 fn text_similarity_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(cosine_similarity, m)?)?;

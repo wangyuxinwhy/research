@@ -1,0 +1,77 @@
+{
+  "algorithms": [
+    "cosine",
+    "jaccard",
+    "bm25_score",
+    "levenshtein"
+  ],
+  "lengths": [
+    "short",
+    "medium",
+    "long"
+  ],
+  "native_rust": {
+    "cosine": {
+      "short": 10.95,
+      "medium": 105.34,
+      "long": 655.6
+    },
+    "levenshtein": {
+      "short": 57.27,
+      "medium": 1667.1
+    },
+    "jaccard": {
+      "short": 7.21,
+      "medium": 66.34,
+      "long": 567.75
+    },
+    "bm25_score": {
+      "short": 7.08,
+      "medium": 62.73,
+      "long": 578.08
+    }
+  },
+  "pyo3": {
+    "cosine": {
+      "short": 29.6969900023214,
+      "medium": 190.05803998879855,
+      "long": 1126.962199987247
+    },
+    "levenshtein": {
+      "short": 37.22926999444098,
+      "medium": 3193.7270999378597,
+      "long": 306869.8537999808
+    },
+    "jaccard": {
+      "short": 10.981009993429325,
+      "medium": 76.1684099870763,
+      "long": 845.6072999706521
+    },
+    "bm25_score": {
+      "short": 9.542050004256453,
+      "medium": 77.34650001111731,
+      "long": 832.1386000034181
+    }
+  },
+  "overhead": {
+    "cosine": {
+      "short": 2.712053881490539,
+      "medium": 1.8042342888627165,
+      "long": 1.7189783404320425
+    },
+    "jaccard": {
+      "short": 1.523024964414608,
+      "medium": 1.1481520950719972,
+      "long": 1.4894007925506862
+    },
+    "bm25_score": {
+      "short": 1.3477471757424369,
+      "medium": 1.2330065361249374,
+      "long": 1.4394869222312103
+    },
+    "levenshtein": {
+      "short": 0.6500658284344505,
+      "medium": 1.9157381680390257
+    }
+  }
+}

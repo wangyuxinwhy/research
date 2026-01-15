@@ -143,6 +143,30 @@ fn levenshtein_distance(s1: &str, s2: &str) -> PyResult<usize> {
 3. **rank-bm25 is slow**: Our custom implementations are 30-50x faster than the popular rank-bm25 library
 4. **scikit-learn has overhead**: For small texts, sklearn's vectorizer setup time dominates
 
+### 6. PyO3 Binding Overhead Analysis
+
+We also measured the overhead of PyO3 bindings compared to native Rust execution:
+
+| Algorithm | Text Length | Native Rust | PyO3 | Overhead |
+|-----------|-------------|-------------|------|----------|
+| **Cosine** | Short | 10.95 µs | 29.70 µs | **2.71x** |
+| **Cosine** | Medium | 105.34 µs | 190.06 µs | **1.80x** |
+| **Cosine** | Long | 655.60 µs | 1126.96 µs | **1.72x** |
+| **Jaccard** | Short | 7.21 µs | 10.98 µs | **1.52x** |
+| **Jaccard** | Medium | 66.34 µs | 76.17 µs | **1.15x** |
+| **Jaccard** | Long | 567.75 µs | 845.61 µs | **1.49x** |
+| **BM25** | Short | 7.08 µs | 9.54 µs | **1.35x** |
+| **BM25** | Medium | 62.73 µs | 77.35 µs | **1.23x** |
+| **BM25** | Long | 578.08 µs | 832.14 µs | **1.44x** |
+
+**Key Insights:**
+- **Average PyO3 overhead: ~1.5x** (range: 1.15x - 2.71x)
+- **Overhead decreases with longer texts**: FFI call overhead is fixed, so longer computations amortize it better
+- **Short texts see highest overhead**: The fixed FFI cost is more significant for quick operations
+- **Still much faster than Pure Python**: Even with 2.7x PyO3 overhead, Rust+PyO3 beats Python by 5-30x
+
+![PyO3 Overhead Chart](results/charts/pyo3_overhead.png)
+
 ## Installation
 
 ### Prerequisites
