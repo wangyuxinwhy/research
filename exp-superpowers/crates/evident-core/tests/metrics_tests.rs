@@ -1,5 +1,7 @@
 use approx::assert_relative_eq;
-use evident_core::metrics::{lift_distribution, probability_b_beats_a};
+use evident_core::metrics::{
+    lift_distribution, probability_b_beats_a, recommend_decision, Decision, DecisionConfig,
+};
 use evident_core::models::BinaryModel;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
@@ -64,4 +66,41 @@ fn lift_distribution_negative() {
     // Relative lift = (0.10 - 0.15) / 0.15 = -0.33 (-33%)
     assert_relative_eq!(lift.mean, -0.33, epsilon = 0.05);
     assert!(lift.ci.1 < 0.0); // Upper bound negative
+}
+
+#[test]
+fn decision_ship_when_clearly_better() {
+    let model_a = BinaryModel::with_uniform_prior(100, 1000);
+    let model_b = BinaryModel::with_uniform_prior(200, 1000);
+
+    let mut rng = ChaCha8Rng::seed_from_u64(42);
+    let config = DecisionConfig::default();
+    let result = recommend_decision(&model_a, &model_b, &mut rng, &config);
+
+    assert!(matches!(result.recommendation, Decision::Ship));
+    assert!(result.confidence > 0.95);
+}
+
+#[test]
+fn decision_dont_ship_when_clearly_worse() {
+    let model_a = BinaryModel::with_uniform_prior(200, 1000);
+    let model_b = BinaryModel::with_uniform_prior(100, 1000);
+
+    let mut rng = ChaCha8Rng::seed_from_u64(42);
+    let config = DecisionConfig::default();
+    let result = recommend_decision(&model_a, &model_b, &mut rng, &config);
+
+    assert!(matches!(result.recommendation, Decision::DontShip));
+}
+
+#[test]
+fn decision_keep_testing_when_uncertain() {
+    let model_a = BinaryModel::with_uniform_prior(10, 100);
+    let model_b = BinaryModel::with_uniform_prior(12, 100);
+
+    let mut rng = ChaCha8Rng::seed_from_u64(42);
+    let config = DecisionConfig::default();
+    let result = recommend_decision(&model_a, &model_b, &mut rng, &config);
+
+    assert!(matches!(result.recommendation, Decision::KeepTesting));
 }
