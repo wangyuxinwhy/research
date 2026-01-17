@@ -1,5 +1,4 @@
-import pytest
-from evident import Experiment, Decision
+from evident import Decision, Experiment
 
 
 def test_binary_experiment_basic():

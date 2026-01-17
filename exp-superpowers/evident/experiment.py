@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, final
 
-from evident import _core
+import evident._core as _core  # type: ignore[import-not-found]  # noqa: PLR0402
 from evident.results import AnalysisResult, Decision, LiftEstimate
 
 _DECISION_MAP = [Decision.SHIP, Decision.DONT_SHIP, Decision.KEEP_TESTING]
@@ -33,7 +33,13 @@ class Experiment:
         )
 
 
+@final
 class BinaryExperiment:
+    _control: BinaryData
+    _treatment: BinaryData
+    _direction: Literal["higher_is_better", "lower_is_better"]
+    _confidence_threshold: float
+
     def __init__(
         self,
         *,
@@ -58,8 +64,14 @@ class BinaryExperiment:
                 self._treatment.trials,
             )
         else:
-            model_a = _core.BinaryModel(self._control.successes, self._control.trials)
-            model_b = _core.BinaryModel(self._treatment.successes, self._treatment.trials)
+            model_a = _core.BinaryModel(
+                self._control.successes,
+                self._control.trials,
+            )
+            model_b = _core.BinaryModel(
+                self._treatment.successes,
+                self._treatment.trials,
+            )
 
         raw = _core.analyze_binary(
             model_a,

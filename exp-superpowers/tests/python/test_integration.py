@@ -1,10 +1,12 @@
-from evident import Experiment, Decision
+from evident import Decision, Experiment
 
 
 def test_customer_service_scenario():
-    """Real scenario: testing new AI model for customer service."""
-    # Control: 15% human handoff rate
-    # Treatment: 12% human handoff rate (lower is better)
+    """Real scenario: testing new AI model for customer service.
+
+    Control has 15% human handoff rate, treatment has 12%.
+    Lower is better, so treatment should win.
+    """
     exp = Experiment.binary(
         control={"trials": 5000, "successes": 750},
         treatment={"trials": 5000, "successes": 600},
@@ -14,14 +16,16 @@ def test_customer_service_scenario():
     result = exp.analyze(seed=42)
 
     assert result.probability_b_wins > 0.95
-    assert result.lift.mean > 0  # Positive lift = improvement in desired direction
+    assert result.lift.mean > 0
     assert result.recommendation == Decision.SHIP
 
 
 def test_satisfaction_rate_scenario():
-    """Real scenario: testing satisfaction rate improvement."""
-    # Control: 82% satisfaction (4-5 stars)
-    # Treatment: 85% satisfaction
+    """Real scenario: testing satisfaction rate improvement.
+
+    Control has 82% satisfaction, treatment has 85%.
+    Higher is better, so treatment should win.
+    """
     exp = Experiment.binary(
         control={"trials": 2000, "successes": 1640},
         treatment={"trials": 2000, "successes": 1700},

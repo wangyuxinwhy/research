@@ -27,4 +27,6 @@ class AnalysisResult:
     recommendation: Decision
 
     def is_significant(self, threshold: float = 0.95) -> bool:
-        return self.probability_b_wins > threshold or self.probability_b_wins < (1 - threshold)
+        above = self.probability_b_wins > threshold
+        below = self.probability_b_wins < (1 - threshold)
+        return above or below
