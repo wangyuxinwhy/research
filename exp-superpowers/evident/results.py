@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
 
 
 class Decision(Enum):
-    SHIP = auto()
-    DONT_SHIP = auto()
-    KEEP_TESTING = auto()
+    SHIP = "Ship"
+    DONT_SHIP = "DontShip"
+    KEEP_TESTING = "KeepTesting"
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,9 +16,15 @@ class LiftEstimate:
     median: float
     ci: tuple[float, float]
 
+    def ci_excludes_zero(self) -> bool:
+        return self.ci[0] > 0 or self.ci[1] < 0
+
 
 @dataclass(frozen=True, slots=True)
 class AnalysisResult:
     probability_b_wins: float
     lift: LiftEstimate
     recommendation: Decision
+
+    def is_significant(self, threshold: float = 0.95) -> bool:
+        return self.probability_b_wins > threshold or self.probability_b_wins < (1 - threshold)
