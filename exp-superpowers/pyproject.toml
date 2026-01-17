@@ -21,7 +21,7 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D1", "ANN101", "ANN102", "COM812", "ISC001"]
+ignore = ["D1", "D203", "D213", "COM812", "ISC001"]
 
 [tool.basedpyright]
 pythonVersion = "3.14"
