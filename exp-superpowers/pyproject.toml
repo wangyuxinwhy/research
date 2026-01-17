@@ -1,0 +1,28 @@
+[build-system]
+requires = ["maturin>=1.0"]
+build-backend = "maturin"
+
+[project]
+name = "evident"
+requires-python = ">=3.14"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dynamic = ["version"]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "evident._core"
+
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["D1", "ANN101", "ANN102", "COM812", "ISC001"]
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "all"
