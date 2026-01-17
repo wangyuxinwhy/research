@@ -12,6 +12,7 @@ classifiers = [
 dynamic = ["version"]
 
 [tool.maturin]
+manifest-path = "crates/evident-py/Cargo.toml"
 features = ["pyo3/extension-module"]
 module-name = "evident._core"
 

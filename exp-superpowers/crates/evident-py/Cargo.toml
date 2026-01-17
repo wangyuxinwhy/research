@@ -1,0 +1,17 @@
+[package]
+name = "evident-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+evident-core = { path = "../evident-core" }
+pyo3 = { version = "0.27", features = ["extension-module"] }
+rand = "0.8"
