@@ -1,6 +1,7 @@
 use evident_core::distributions::Beta as CoreBeta;
 use evident_core::metrics::{
-    lift_distribution as core_lift, probability_b_beats_a as core_prob_b_beats_a,
+    lift_distribution as core_lift,
+    probability_treatment_beats_control as core_prob_treatment_beats_control,
     recommend_decision as core_recommend, Decision as CoreDecision, DecisionConfig,
 };
 use evident_core::models::BinaryModel as CoreBinaryModel;
@@ -89,7 +90,7 @@ pub enum Decision {
 #[derive(Clone)]
 pub struct AnalysisResult {
     #[pyo3(get)]
-    probability_b_wins: f64,
+    probability_treatment_wins: f64,
     #[pyo3(get)]
     lift: Lift,
     #[pyo3(get)]
@@ -97,10 +98,10 @@ pub struct AnalysisResult {
 }
 
 #[pyfunction]
-#[pyo3(signature = (model_a, model_b, n_samples=100_000, ci_level=0.95, confidence_threshold=0.95, seed=None))]
+#[pyo3(signature = (control, treatment, n_samples=100_000, ci_level=0.95, confidence_threshold=0.95, seed=None))]
 fn analyze_binary(
-    model_a: &BinaryModel,
-    model_b: &BinaryModel,
+    control: &BinaryModel,
+    treatment: &BinaryModel,
     n_samples: usize,
     ci_level: f64,
     confidence_threshold: f64,
@@ -111,14 +112,16 @@ fn analyze_binary(
         None => StdRng::from_entropy(),
     };
 
-    let prob_b_wins = core_prob_b_beats_a(&model_a.inner, &model_b.inner, &mut rng, n_samples);
-    let lift_result = core_lift(&model_a.inner, &model_b.inner, &mut rng, n_samples, ci_level);
+    let prob_treatment_wins =
+        core_prob_treatment_beats_control(&control.inner, &treatment.inner, &mut rng, n_samples);
+    let lift_result =
+        core_lift(&control.inner, &treatment.inner, &mut rng, n_samples, ci_level);
 
     let config = DecisionConfig {
         confidence_threshold,
         n_samples,
     };
-    let decision_result = core_recommend(&model_a.inner, &model_b.inner, &mut rng, &config);
+    let decision_result = core_recommend(&control.inner, &treatment.inner, &mut rng, &config);
 
     let recommendation = match decision_result.recommendation {
         CoreDecision::Ship => Decision::Ship,
@@ -127,7 +130,7 @@ fn analyze_binary(
     };
 
     AnalysisResult {
-        probability_b_wins: prob_b_wins,
+        probability_treatment_wins: prob_treatment_wins,
         lift: Lift {
             mean: lift_result.mean,
             median: lift_result.median,

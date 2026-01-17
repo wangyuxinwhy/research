@@ -1,2 +1,8 @@
 .worktrees/
 target/
+__pycache__/
+*.pyc
+*.pyo
+*.so
+.venv/
+*.egg-info/

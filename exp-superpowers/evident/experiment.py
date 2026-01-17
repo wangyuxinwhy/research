@@ -55,33 +55,33 @@ class BinaryExperiment:
 
     def analyze(self, *, seed: int | None = None) -> AnalysisResult:
         if self._direction == "lower_is_better":
-            model_a = _core.BinaryModel(
+            control_model = _core.BinaryModel(
                 self._control.trials - self._control.successes,
                 self._control.trials,
             )
-            model_b = _core.BinaryModel(
+            treatment_model = _core.BinaryModel(
                 self._treatment.trials - self._treatment.successes,
                 self._treatment.trials,
             )
         else:
-            model_a = _core.BinaryModel(
+            control_model = _core.BinaryModel(
                 self._control.successes,
                 self._control.trials,
             )
-            model_b = _core.BinaryModel(
+            treatment_model = _core.BinaryModel(
                 self._treatment.successes,
                 self._treatment.trials,
             )
 
         raw = _core.analyze_binary(
-            model_a,
-            model_b,
+            control_model,
+            treatment_model,
             confidence_threshold=self._confidence_threshold,
             seed=seed,
         )
 
         return AnalysisResult(
-            probability_b_wins=raw.probability_b_wins,
+            probability_treatment_wins=raw.probability_treatment_wins,
             lift=LiftEstimate(
                 mean=raw.lift.mean,
                 median=raw.lift.median,

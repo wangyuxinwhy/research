@@ -22,11 +22,11 @@ class LiftEstimate:
 
 @dataclass(frozen=True, slots=True)
 class AnalysisResult:
-    probability_b_wins: float
+    probability_treatment_wins: float
     lift: LiftEstimate
     recommendation: Decision
 
     def is_significant(self, threshold: float = 0.95) -> bool:
-        above = self.probability_b_wins > threshold
-        below = self.probability_b_wins < (1 - threshold)
+        above = self.probability_treatment_wins > threshold
+        below = self.probability_treatment_wins < (1 - threshold)
         return above or below

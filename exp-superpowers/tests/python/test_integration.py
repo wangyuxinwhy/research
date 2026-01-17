@@ -15,7 +15,7 @@ def test_customer_service_scenario():
 
     result = exp.analyze(seed=42)
 
-    assert result.probability_b_wins > 0.95
+    assert result.probability_treatment_wins > 0.95
     assert result.lift.mean > 0
     assert result.recommendation == Decision.SHIP
 
@@ -34,7 +34,7 @@ def test_satisfaction_rate_scenario():
 
     result = exp.analyze(seed=42)
 
-    assert result.probability_b_wins > 0.80
+    assert result.probability_treatment_wins > 0.80
     assert result.lift.mean > 0
 
 

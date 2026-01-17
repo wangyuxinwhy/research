@@ -8,7 +8,7 @@ def test_binary_experiment_basic():
     )
     result = exp.analyze()
 
-    assert 0.0 <= result.probability_b_wins <= 1.0
+    assert 0.0 <= result.probability_treatment_wins <= 1.0
     assert result.lift.mean > 0
     assert result.recommendation == Decision.SHIP
 
@@ -21,5 +21,5 @@ def test_binary_experiment_lower_is_better():
     )
     result = exp.analyze()
 
-    assert result.probability_b_wins > 0.95
+    assert result.probability_treatment_wins > 0.95
     assert result.recommendation == Decision.SHIP
