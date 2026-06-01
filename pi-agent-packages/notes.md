@@ -175,7 +175,13 @@ getFollowUpMessages 等 hook 的实现来源。
 
 ### 设计1：副作用全抽象成可注入接口（依赖倒置）
 构造时注入（AgentHarnessOptions L798）：
-- `ExecutionEnv = FileSystem + Shell`：工具不直接 import fs，可换沙箱/远程/内存（安全+可测）。env/nodejs.ts 只是一个实现。
+- `ExecutionEnv = FileSystem + Shell`：**harness 自身**访问宿主 OS 的能力句柄。
+  ⚠️ 名字误导：它不是"工具执行的 sandbox"。真实消费者全是 harness 内部子系统——
+  资源加载器(skill/prompt-template loaders)、JSONL session 存储、shell-output capture、compaction。
+  **不进 AgentContext，loop 和工具都拿不到它**。按职责更该叫 HostCapabilities / PlatformAccess。
+  可换沙箱/远程/内存（安全+可测）。env/nodejs.ts 只是一个实现。
+- 工具的依赖是**另一条独立管道**：工厂捕获 cwd + 各自的窄 operations 接口（如 ReadOperations 三方法），
+  默认实现直接打 node fs（read.ts 直接 import "fs/promises"）。ExecutionEnv 与 AgentTool 正交，谁都不依赖谁。
 - `Session`/`SessionStorage`/`SessionRepo`：JSONL 或内存可换。
 - `Skill`/`PromptTemplate`/`Resources`：素材由 app 加载，harness 只消费。
 
@@ -204,6 +210,14 @@ AgentHarnessTurnState(L158) + streamOptions "Snapshotted at turn start"(L824)。
 ---
 
 ## 5. ExecutionEnv：从第一性原理推导
+
+> ⚠️ **重要更正（事后核实）**：本节最初把 ExecutionEnv 当成"工具读写文件的出口"来推导，**前提错了**。
+> 实证：喂给 loop 的 AgentContext 只有 {systemPrompt,messages,tools}，**不含 env**；coding-agent 的
+> read 工具直接 `import "fs/promises"`，走自己的窄 operations 接口。文档(agent-harness.md:3,28)证实
+> ExecutionEnv 是 **harness 基础设施**访问宿主 OS 的能力句柄（资源加载/session/shell-output/compaction 用），
+> 与工具无关。下面的接口推导（Result/abort/timeout/symlink）技术上仍有效——因为"任何程序↔文件系统的边界"
+> 都会撞上这些约束，与消费者是谁无关；但"消费者是工具"这个框架是错的。正确框架应分两问：
+> (1) harness 容器需要什么环境? → ExecutionEnv；(2) 单个工具需要什么? → 各自最小 operations 接口。
 
 ### 5.1 出发点
 LLM 只会出 token，要成 agent 必须能感知+改变环境。最小能力集：跑命令(shell) + 读写文件(fs)。
