@@ -57,3 +57,6 @@ htmlcov/
 *.log
 *.out
 *.tmp
+
+# Third-party clones (studied, not vendored)
+pi-agent-packages/pi-mono/
