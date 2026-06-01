@@ -246,6 +246,42 @@ naive v0：`exec(cmd):Promise<string>` / `readFile` / `writeFile` / `listDir`，
 2. 一切可中断/可超时 (signal + timeout) ← LLM 不可信、用户要控制
 3. 副作用可替换 (纯接口) ← 要能沙箱化/可测试
 
+---
+
+## 6. hooks 设计（docs/hooks.md，设计文档）
+
+### 6.1 第一性原理：hook 要解决什么
+agent 在跑 loop，app 想中途插一脚，只有两类目的：
+- **看**：日志/UI（不改变流程）
+- **改**：拦截工具/改上下文（改变接下来发生的事）
+
+推导链：
+1. 只"看" → 一个回调 `onEvent(cb)`
+2. 事件分很多类、只关心一种 → `on(type, handler)`（省去自己 if 过滤）
+3. 要"改" → handler 返回值表达决定（如 `return {block:true}` 拦工具）
+4. **核心难题**：不同事件返回值类型不同（tool_call→{block?}、context→{messages?}、message_end→void），
+   怎么让类型系统强制"每种事件返回对的东西、错的写不出来"？
+
+### 6.2 两种解法
+- **解法A（result map）**：单独一张表 `{ tool_call:{block?}, context:{messages?}, ... }`，on 时查表。
+  缺点：事件定义和返回值类型分两处，加事件要改两处，会不同步。
+- **解法B（phantom type）**：事件自带"隐形返回值标签" `readonly [HookResult]?: TResult`
+  （unique symbol 当 key，可选、运行时永远 undefined、只活在类型层），`ResultOf<E>` 读出它。
+  好处：单一真相源，加事件只改一处 → 文档 "No result map"。
+
+### 6.3 三个动词（对应 看/改）
+- `observe(h)`：看所有事件，只读，返回值忽略
+- `on(type,h)`：参与某事件语义，返回值被采纳（靠解法的类型保证）
+- `emit(e)`：只有 harness 自己触发，是事件源
+
+### 6.4 ⚠️ 关键核实：文档 ≠ 代码
+文档标 "Final design" + 用解法B；但 grep 代码：HookResult/ResultOf/AgentHarnessHooks **全不存在**，
+代码实际用解法A（`emitHook<TType extends keyof AgentHarnessEventResultMap>` agent-harness.ts:249）。
+→ **结论：文档是"愿景/方向"，代码是"现状"，文档跑在实现前面。**
+→ **方法论：读设计文档(尤其 "Final design"/命名/声明)不能直接当事实，必须分清"作者想要"vs"代码实际"，
+   到代码里核对**（与 ExecutionEnv 那次同类陷阱）。
+
 ## 待办 / 疑问
+- [ ] hooks.md 后续节：Default implementation internals / Mutation semantics / Poking holes / Verdict
 - [ ] 下一步：进 env/nodejs.ts 看接口怎么落地（spawn 包装/abort/相对路径/symlink/Windows taskkill）
 - [ ] agent-core 其他：executeToolCalls 并行/串行？compaction？Session 树/分支？hook 串联？
