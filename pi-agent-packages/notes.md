@@ -281,6 +281,34 @@ agent 在跑 loop，app 想中途插一脚，只有两类目的：
 → **方法论：读设计文档(尤其 "Final design"/命名/声明)不能直接当事实，必须分清"作者想要"vs"代码实际"，
    到代码里核对**（与 ExecutionEnv 那次同类陷阱）。
 
+### 6.5 实现内部（Default implementation internals）
+- 三个容器：observers(Set,看所有) / handlers(Map<type,Set>,按类型查) / cleanups(Set)。
+- observe/on 注册即返回"注销器"函数。
+- emit 两步：①先跑所有 observer ②按 type switch 到各自的合并方法。
+- 务实取舍：内部允许 cast（Map<string> 丢精度），公共 API 保持类型安全。
+
+### 6.6 合并语义（Mutation semantics）：3 种范式
+骨架都是 for 遍历 handler，区别只在"怎么对待返回值"：
+- **接力改写**(context/payload/tool_result)：current 累积，后者在前者基础上改 — "大家都想改一点"
+- **一票否决**(tool_call/session_before_*)：有人返回 block/cancel 立即早退 — "安全/取消决定"
+- **收集累加**(before_agent_start 的 messages)：全部 push 保留 — "各自产出都生效"
+- before_agent_start 同事件混用两范式：messages 收集 / systemPrompt 接力 → **合并策略跟数据语义走，不跟事件走**
+- 统一约定：没改返回 undefined = "我没动它"
+
+### 6.7 系统分工（usage/context/extension）
+- harness 对 hook 的全部认知 = `await hooks.emit(event)` + 用返回值；**不存 handler/不合并/不懂策略**(L288)。
+- handler 第二参 ctx = 注入的能力门面(harness/session/ui/models)，常驻不重建；signal 第三参单独传。
+- 扩展用 `hooks.on(type,fn)` 注册进 hooks 对象；reload = clear()→重载→setHooks(仅 idle)。
+- 三方解耦：harness 只认识 emit、扩展只认识 on、都只依赖中枢 hooks 对象。
+
+### 6.8 Poking holes + Verdict（设计方法论，最值钱）
+作者写完方案先**自我攻击**，7 个洞覆盖维度：健壮性(handler 抛错→errorMode)/可观测性(归因→source
+metadata scope)/边界(tools 等是 registry 不是 hook)/可行性/迁移风险(旧语义照搬)/实现弱点(switch 会漏)/
+故意的限制(observer 看不到中间态)。Verdict = **有条件通过**：前提条件正好是那些洞 → 洞转成实现待办。
+- 洞3 印证：tools 是**注册型扩展点**走独立管道，非事件 hook（呼应 AgentTool 不依赖 env）。
+- 洞6 印证：switch(解法A) 会漏 → 正是想演进到 phantom(解法B) 的动机。
+- **方法论沉淀：设计 → 分维度自我拆台 → 把洞转成有条件裁决**（即我前面栽跟头缺的"先质疑再下结论"）。
+
 ## 待办 / 疑问
 - [ ] hooks.md 后续节：Default implementation internals / Mutation semantics / Poking holes / Verdict
 - [ ] 下一步：进 env/nodejs.ts 看接口怎么落地（spawn 包装/abort/相对路径/symlink/Windows taskkill）
