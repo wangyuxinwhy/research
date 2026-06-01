@@ -309,7 +309,34 @@ metadata scope)/边界(tools 等是 registry 不是 hook)/可行性/迁移风险
 - 洞6 印证：switch(解法A) 会漏 → 正是想演进到 phantom(解法B) 的动机。
 - **方法论沉淀：设计 → 分维度自我拆台 → 把洞转成有条件裁决**（即我前面栽跟头缺的"先质疑再下结论"）。
 
+---
+
+## 7. observability.md + 元认知：文档与实现的光谱
+
+### 7.1 observability 设计要点（docs/observability.md，纯设计稿）
+- Goal：可观测但**不绑定 OTel/Sentry/任何 APM**；pi 只发中立结构化事件，翻译成具体监控是外部的事
+  （又一次"库发事件、消费外包"，同 EventStream/AgentEvent/hooks）。
+- Mental model：trace=因果树(一次 turn)，span=树里一个计时操作，用 ID 不用对象指针(可序列化)。
+  借 OTel 概念但不借 OTel 依赖。
+- Async context：全局 currentContext 并发会串味 → AsyncLocalStorage(ALS) 每条 async 链独立上下文；
+  但浏览器无 ALS → **ALS 只能是运行时适配器，核心抽象运行时无关**（同 ExecutionEnv 套路）。
+- traceOperation(name, payload, fn)：读当前ctx→建 spanId→把当前 span 设为 parent→emit start→
+  在子ctx里跑fn→emit end/error。**树自动长出来**：父子靠 async ctx 嵌套自动捕获，无需手动传 parent。
+- **最小埋点**：只 wrap 8 个公共边界(prompt/skill/compact/navigateTree/session.append/streamSimple/
+  completeSimple/tool_call)，不 wrap 业务函数。埋点按"代码位置"算(1处)，运行时覆盖该类所有实例(N次)。
+  "每个 ToolCall" ≠ "每个函数"：在 loop 执行工具的公共点 wrap 一次 → 每次调用各得一个 span。
+  hasSubscribers() → 没人听几乎零开销。框架埋公共边界，实现按需埋私有细节。
+
+### 7.2 ⚠️ 元认知：docs/ 是设计思考集合，实现程度参差
+核实(grep 核心符号)：traceOperation/PiObservability/AsyncLocalStorage 在**整个代码库 0 行** → 纯愿景。
+三个样本排成"文档↔实现距离"光谱：
+```
+ExecutionEnv ──────── hooks.md ──────── observability.md
+实现≈文档(我误读角色)  半实现(主推B没落地)   零实现(纯roadmap)
+```
+→ **pi 的 docs/ 学的是"设计思路"，不能假设代码=文档。判断实现程度的反射动作 = grep 核心符号(30秒定位)。**
+
 ## 待办 / 疑问
-- [ ] hooks.md 后续节：Default implementation internals / Mutation semantics / Poking holes / Verdict
+- [ ] observability.md 剩余：Safety and redaction / Thesis（纯设计，未实现）
 - [ ] 下一步：进 env/nodejs.ts 看接口怎么落地（spawn 包装/abort/相对路径/symlink/Windows taskkill）
 - [ ] agent-core 其他：executeToolCalls 并行/串行？compaction？Session 树/分支？hook 串联？
